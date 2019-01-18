@@ -1,25 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace AoCHelpers
+namespace AocHelpers
 {
     public class InputLoader
     {
         public static List<string> LoadByLines(string filename)
         {
-            FileStream file = new FileStream(filename, FileMode.Open);
-            StreamReader stream = new StreamReader(file);
+            StreamReader file = new StreamReader(filename);
             string line;
             List<string> lines = new List<string>();
 
-            while ((line = stream.ReadLine()) != null)
+            while ((line = file.ReadLine()) != null)
             {
                 lines.Add(line);
             }
 
-            stream.Dispose();
-            file.Dispose();
+            file.Close();
             return lines;
         }
     }
