@@ -30,10 +30,8 @@ namespace Day13
 
         }
 
-        static List<Location> GetWalkableAdjacentSquares(int x, int y)
+        static List<Location> GetWalkableAdjacentSquares(int x, int y, int input)
         {
-            // Puzzle input
-            int input = 1352;
             List<Location> proposedLocations = new List<Location>()
             {
                 new Location { X = x, Y = y - 1 },
@@ -45,9 +43,12 @@ namespace Day13
 
             foreach (Location l in proposedLocations)
             {
-                if (!GetParity(l.X * l.X + 3 * l.X + 2 * l.X * l.Y + l.Y + l.Y * l.Y + input))
+                if ((l.X >= 0) && (l.Y >= 0))
                 {
-                    possibleLocations.Add(l);
+                    if (!GetParity(l.X * l.X + 3 * l.X + 2 * l.X * l.Y + l.Y + l.Y * l.Y + input))
+                    {
+                        possibleLocations.Add(l);
+                    }
                 }
             }
 
@@ -73,12 +74,12 @@ namespace Day13
             return Math.Abs(targetX - x) + Math.Abs(targetY - y);
         }
 
-        static void Main(string[] args)
+        static int GetShorestPathDistance(int startx, int starty, int targetx, int targety, int input)
         {
             // A* algorithm for path finding
             Location current = null;
-            Location start = new Location { X = 1, Y = 1 };
-            Location target = new Location { X = 31, Y = 39 };
+            Location start = new Location { X = startx, Y = starty };
+            Location target = new Location { X = targetx, Y = targety };
             List<Location> openList = new List<Location>();
             List<Location> closedList = new List<Location>();
             int g = 0;
@@ -86,7 +87,7 @@ namespace Day13
             // add the starting position to the open list
             openList.Add(start);
 
-            while(openList.Count > 0)
+            while (openList.Count > 0)
             {
                 // get the square with the lowest F score from openList
                 current = openList[0];
@@ -110,7 +111,7 @@ namespace Day13
                     break;
                 }
 
-                List<Location> adjacentSquares = GetWalkableAdjacentSquares(current.X, current.Y);
+                List<Location> adjacentSquares = GetWalkableAdjacentSquares(current.X, current.Y, input);
                 //g++;
                 g = current.G + 1;
 
@@ -148,17 +149,87 @@ namespace Day13
                 }
             }
 
-            // assume path was found; let's show it
-            /*while (current != null)
-            {
-                Console.SetCursorPosition(current.X, current.Y);
-                Console.Write('_');
-                Console.SetCursorPosition(current.X, current.Y);
-                current = current.Parent;
-                System.Threading.Thread.Sleep(1000);
-            }*/
+            return current.G;
+        }
 
-            Console.WriteLine("Shortest path to target: {0}", current.G);
+        static int GetNumberLocationsUpToDistance(int startx, int starty, int maxDistance, int input)
+        {
+            // A* algorithm for path finding
+            Location current = null;
+            Location start = new Location { X = startx, Y = starty };
+            List<Location> openList = new List<Location>();
+            List<Location> closedList = new List<Location>();
+            int g = 0;
+
+            // add the starting position to the open list
+            openList.Add(start);
+
+            while (openList.Count > 0)
+            {
+                current = openList[0];
+
+                // add the current square to the closed list
+                closedList.Add(current);
+
+                // remove it from the open list
+                openList.Remove(current);
+
+                // if we added the destination to the closed list, we've found a path
+                /*if ((current.X == target.X) && (current.Y == target.Y))
+                {
+                    break;
+                }*/
+                g = current.G;
+                if (g == 50)
+                {
+                    continue;
+                }
+
+                List<Location> adjacentSquares = GetWalkableAdjacentSquares(current.X, current.Y, input);
+                g++;
+
+                foreach (Location adjacentSquare in adjacentSquares)
+                {
+                    // if this adjacent square is already in the closed list, ignore it
+                    if (IsInList(adjacentSquare, closedList))
+                    {
+                        continue;
+                    }
+
+                    // if it's not in the open list...
+                    if (!IsInList(adjacentSquare, openList))
+                    {
+                        // compute its score, set the parent
+                        adjacentSquare.G = g;
+                        //adjacentSquare.H = ComputeHScore(adjacentSquare.X, adjacentSquare.Y, target.X, target.Y);
+                        //adjacentSquare.F = adjacentSquare.G + adjacentSquare.H;
+                        adjacentSquare.Parent = current;
+
+                        // and add it to the open list
+                        openList.Insert(0, adjacentSquare);
+                    }
+                    else
+                    {
+                        // test if using the current G score makes the adjacent square's F score
+                        // lower, if yes update the parent because it means it's a better path
+                        /*if (g + adjacentSquare.H < adjacentSquare.F)
+                        {
+                            adjacentSquare.G = g;
+                            adjacentSquare.F = adjacentSquare.G + adjacentSquare.H;
+                            adjacentSquare.Parent = current;
+                        }*/
+                    }
+                }
+            }
+
+            return closedList.Count;
+        }
+
+        static void Main(string[] args)
+        {
+            int input = 1352;
+            Console.WriteLine("Shortest path to target: {0}", GetShorestPathDistance(1, 1, 31, 39, input));
+            Console.WriteLine("Locations within 50 steps: {0}", GetNumberLocationsUpToDistance(1, 1, 50, input));
             Console.ReadLine();
         }
     }
