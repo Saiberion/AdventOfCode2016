@@ -8,57 +8,115 @@ using System.Threading.Tasks;
 
 namespace Day14
 {
-    class Candidate
-    {
-        public StringBuilder Hash { get; set; }
-        public int TripleIndex { get; set; }
-        public char Value { get; set; }
-    }
-
     class Program
     {
-        static int GenerateOTPs(string salt, int count)
+        static readonly byte[] lookup = { 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102 };
+
+        static byte[] ConvertToReadable(byte[] hash)
         {
-            List<string> otps = new List<string>();
-            //Dictionary<int, int> possibleOtps = new Dictionary<int, int>();
-            List<Candidate> candidates = new List<Candidate>();
+            byte[] b = new byte[hash.Length * 2];
+            b = new byte[hash.Length * 2];
+            for (int j = 0; j < b.Length; j += 2)
+            {
+                b[j] = lookup[hash[j / 2] >> 4];
+                b[j + 1] = lookup[hash[j / 2] & 0xf];
+            }
+            return b;
+        }
+
+        static byte[] GenerateHash(byte[] toHash)
+        {
             MD5 md5 = MD5.Create();
 
-            int index = 0;
-            while (otps.Count < count)
-            {
-                string toHash;
-                toHash = salt + index;
+            return md5.ComputeHash(toHash);
+        }
 
-                byte[] hash = md5.ComputeHash(System.Text.Encoding.ASCII.GetBytes(toHash.ToString()));
-                StringBuilder hashString = new StringBuilder();
-                for (int i = 0; i < hash.Length; i++)
+        static byte[] GetHash(byte[] toHash, bool stretched)
+        {
+            byte[] hash = GenerateHash(toHash);
+            byte[] b = new byte[hash.Length * 2];
+
+            if (stretched)
+            {
+                for(int i = 0; i < 2016; i++)
                 {
-                    hashString.Append(hash[i].ToString("x2"));
+                    hash = GenerateHash(ConvertToReadable(hash));
+                }
+            }
+
+            /*StringBuilder sb = new StringBuilder();
+            foreach(byte by in hash)
+            {
+                sb.Append((char)lookup[(by >> 4) & 0xf]).Append((char)lookup[by & 0xf]);
+            }
+            return sb.ToString();*/
+            return hash;
+        }
+
+        static int GenerateOTPs(string salt, int count, bool stretched)
+        {
+            int generatedKeys = 0;
+            MD5 md5 = MD5.Create();
+            Dictionary<int, byte[]> precreatedHashes = new Dictionary<int, byte[]>();
+            byte[] hash;
+
+            int index = 0;
+            while (generatedKeys < count)
+            {
+                if (!precreatedHashes.ContainsKey(index))
+                {
+                    hash = GetHash(Encoding.ASCII.GetBytes(salt + index), stretched);
+                }
+                else
+                {
+                    hash = precreatedHashes[index];
+                    precreatedHashes.Remove(index);
                 }
 
+                hash = ConvertToReadable(hash);
+
                 // Find triplets
-                for(int i = 0; i < hashString.Length - 2; i++)
+                for(int i = 0; i < hash.Length - 2; i++)
                 {
-                    if ((hashString[i] == hashString[i+1]) && (hashString[i] == hashString[i+2]))
+                    if ((hash[i] == hash[i+1]) && (hash[i] == hash[i+2]))
                     {
                         // found triplet
                         // search upcoming hashes for matching quintuples
                         for (int j = 1; j <= 1000; j++)
                         {
-                            toHash = salt + (index + j);
-                            hash = md5.ComputeHash(System.Text.Encoding.ASCII.GetBytes(toHash.ToString()));
-                            StringBuilder hashString2 = new StringBuilder();
-                            for (int k = 0; k < hash.Length; k++)
+                            byte[] hash2;
+
+                            if (precreatedHashes.ContainsKey(index + j))
                             {
-                                hashString2.Append(hash[k].ToString("x2"));
+                                hash2 = precreatedHashes[index + j];
                             }
-                            if (!hashString2.ToString().Contains(new string(hashString[i], 5)))
+                            else
+                            {
+                                hash2 = GetHash(Encoding.ASCII.GetBytes(salt + (index + j)), stretched);
+                                precreatedHashes.Add(index + j, hash2);
+                            }
+
+                            hash2 = ConvertToReadable(hash2);
+
+                            bool has5InARow = false;
+                            for(int k = 0; k < hash2.Length - 4; k++)
+                            {
+                                if (hash2[k] == hash[i])
+                                {
+                                    if ((hash2[k] == hash2[k + 1]) && (hash2[k] == hash2[k + 2]) && (hash2[k] == hash2[k + 3]) && (hash2[k] == hash2[k + 4]))
+                                    {
+                                        has5InARow = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (!has5InARow)
                             {
                                 continue;
                             }
 
-                            otps.Add(hashString.ToString());
+                            generatedKeys++;
                             break;
                         }
                         break;
@@ -68,13 +126,16 @@ namespace Day14
                 index++;
             }
 
+            precreatedHashes.Clear();
+
             return index - 1;
         }
 
         static void Main(string[] args)
         {
-            List<string> input = InputLoader.LoadByLines("input.txt");
-            Console.WriteLine("Last index for OTP 64: {0}", GenerateOTPs(input[0], 64));
+            List<string> input = InputLoader.LoadByLines("example.txt");
+            Console.WriteLine("Last index for OTP 64: {0}", GenerateOTPs(input[0], 64, false));
+            Console.WriteLine("Last index for OTP 64 stretched: {0}", GenerateOTPs(input[0], 64, true));
             Console.ReadLine();
         }
     }
