@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -26,7 +25,7 @@ namespace Day14
 
         static byte[] GenerateHash(byte[] toHash)
         {
-            MD5 md5 = MD5.Create();
+            MD5Managed md5 = new MD5Managed();
 
             return md5.ComputeHash(toHash);
         }
@@ -56,7 +55,6 @@ namespace Day14
         static int GenerateOTPs(string salt, int count, bool stretched)
         {
             int generatedKeys = 0;
-            MD5 md5 = MD5.Create();
             Dictionary<int, byte[]> precreatedHashes = new Dictionary<int, byte[]>();
             byte[] hash;
 
@@ -133,7 +131,7 @@ namespace Day14
 
         static void Main(string[] args)
         {
-            List<string> input = InputLoader.LoadByLines("example.txt");
+            List<string> input = InputLoader.LoadByLines("input.txt");
             Console.WriteLine("Last index for OTP 64: {0}", GenerateOTPs(input[0], 64, false));
             Console.WriteLine("Last index for OTP 64 stretched: {0}", GenerateOTPs(input[0], 64, true));
             Console.ReadLine();
