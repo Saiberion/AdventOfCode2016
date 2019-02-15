@@ -9,8 +9,10 @@ namespace Day20
 {
     class Program
     {
-        static long MinimumFreeIP(List<string> input)
+        static Tuple<long,long> MinimumFreeIP(List<string> input)
         {
+            long validIPs = 0;
+            long minResult = -1;
             List<long[]> ranges = new List<long[]>();
             foreach(string s in input)
             {
@@ -33,7 +35,7 @@ namespace Day20
 
             if (minRange[0] > 0)
             {
-                return 0;
+                return new Tuple<long, long>(0, 0);
             }
             else
             {
@@ -60,7 +62,14 @@ namespace Day20
                 else if ((minRange[0] > minAllowed) && (minRange[1] > minAllowed))
                 {
                     // no range is starting earlier, result found
-                    return minAllowed;
+                    // could get used for Part 2 counting
+                    validIPs += minRange[0] - minAllowed;
+                    if (minResult == -1)
+                    {
+                        minResult = minAllowed;
+                    }
+                    minAllowed = minRange[1] + 1;
+                    ranges.Remove(minRange);
                 }
                 else
                 {
@@ -68,7 +77,9 @@ namespace Day20
                     minAllowed = minRange[1] + 1;
                     ranges.Remove(minRange);
                 }
-            } while (true);
+            } while (ranges.Count > 0);
+
+            return new Tuple<long, long>(minResult, validIPs);
         }
 
         static void Main(string[] args)
