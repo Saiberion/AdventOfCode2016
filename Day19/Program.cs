@@ -12,93 +12,97 @@ namespace Day19
         {
             public int Seat { get; set; }
             public int Presents { get; set; }
+            public Elf Next { get; set; }
+            public Elf Prev { get; set; }
         }
 
         static int StealingPart1(int maxElves)
         {
-            List<Elf> elves = new List<Elf>();
-            int lastElf = 0;
-            bool allPresentsGathered = false;
-            bool couldSteal;
+            Elf root = new Elf { Seat = 1, Presents = 1 };
+            Elf elf = root;
+            Elf target = null;
 
-            for (int i = 0; i < maxElves; i++)
+            for (int i = 1; i < maxElves; i++)
             {
-                elves.Add(new Elf { Seat = i + 1, Presents = 1 });
-            }
-
-            while (!allPresentsGathered)
-            {
-                for (int i = 0; i < maxElves; i++)
+                if (i == maxElves)
                 {
-                    if (elves[i].Presents > 0)
-                    {
-                        couldSteal = false;
-                        for (int j = i + 1; j < maxElves; j++)
-                        {
-                            if (elves[j].Presents > 0)
-                            {
-                                elves[i].Presents += elves[j].Presents;
-                                elves[j].Presents = 0;
-                                couldSteal = true;
-                                break;
-                            }
-                        }
-                        if (!couldSteal)
-                        {
-                            for (int j = 0; j < i; j++)
-                            {
-                                if (elves[j].Presents > 0)
-                                {
-                                    elves[i].Presents += elves[j].Presents;
-                                    elves[j].Presents = 0;
-                                    couldSteal = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (elves[i].Presents == maxElves)
-                        {
-                            allPresentsGathered = true;
-                            lastElf = elves[i].Seat;
-                            break;
-                        }
-                    }
+                    elf.Next = root;
+                }
+                else
+                {
+                    elf.Next = new Elf { Seat = i + 1, Presents = 1, Prev = elf };
+                }
+                elf = elf.Next;
+                if (i == 1)
+                {
+                    target = elf;
                 }
             }
-            return lastElf;
+            elf.Next = root;
+            root.Prev = elf;
+            elf = root;
+
+            while(elf.Next != elf)
+            {
+                elf.Presents += target.Presents;
+
+                target.Prev.Next = target.Next;
+                target.Next.Prev = target.Prev;
+                target = target.Next.Next;
+
+                elf = elf.Next;
+            }
+            
+            return elf.Seat;
         }
 
         static int StealingPart2(int maxElves)
         {
-            List<Elf> elves = new List<Elf>();
-            int lastElf = 0;
-            bool allPresentsGathered = false;
+            Elf root = new Elf { Seat = 1, Presents = 1 };
+            Elf elf = root;
+            Elf target = null;
+            int remaining = maxElves;
 
-            for (int i = 0; i < maxElves; i++)
+            for (int i = 1; i < maxElves; i++)
             {
-                elves.Add(new Elf { Seat = i + 1, Presents = 1 });
-            }
-
-            while (!allPresentsGathered)
-            {
-                for (int i = 0; i < elves.Count; i++)
+                if (i == maxElves)
                 {
-                    Elf e = elves[i];
-                    int skip = elves.Count / 2;
-                    int index = (i + skip) % elves.Count;
-                    e.Presents += elves[index].Presents;
-                    elves.RemoveAt(index);
-
-                    if (e.Presents == maxElves)
-                    {
-                        allPresentsGathered = true;
-                        lastElf = elves[i].Seat;
-                        break;
-                    }
+                    elf.Next = root;
+                }
+                else
+                {
+                    elf.Next = new Elf { Seat = i + 1, Presents = 1, Prev = elf };
+                }
+                elf = elf.Next;
+                if (i == maxElves / 2)
+                {
+                    target = elf;
                 }
             }
-            return lastElf;
+            elf.Next = root;
+            root.Prev = elf;
+            elf = root;
+
+            while (elf.Next != elf)
+            {
+                elf.Presents += target.Presents;
+
+                target.Prev.Next = target.Next;
+                target.Next.Prev = target.Prev;
+                if ((remaining % 2) == 1)
+                {
+                    target = target.Next.Next;
+                }
+                else
+                {
+                    target = target.Next;
+                }
+                remaining--;
+
+                elf = elf.Next;
+            }
+
+            return elf.Seat;
         }
 
         static void Main(string[] args)
